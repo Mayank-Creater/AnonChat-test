@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AnonChat – {{ room }}</title>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #e5e7eb;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #020617;
+      padding: 15px 20px;
+      font-size: 18px;
+      font-weight: bold;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    #chat-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .message {
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .status {
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    footer {
+      padding: 15px;
+      background: #020617;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      gap: 10px;
+    }
+
+    #text {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 15px;
+    }
+
+    #send {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    #send:hover {
+      background: #1d4ed8;
+    }
+
+    #leave {
+      margin-left: auto;
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+
+  <script>
+    let socket;
+
+    $(document).ready(function () {
+      socket = io.connect(
+        "http://" + document.domain + ":" + location.port + "/chat"
+      );
+
+      socket.on("connect", function () {
+        socket.emit("joined", {});
+      });
+
+      socket.on("status", function (data) {
+        addMessage(`<span class="status">${data.msg}</span>`);
+      });
+
+      socket.on("message", function (data) {
+        addMessage(data.msg);
+      });
+
+      $("#send").click(sendMessage);
+
+      $("#text").keypress(function (e) {
+        if (e.which === 13) sendMessage();
+      });
+    });
+
+    function sendMessage() {
+      const text = $("#text").val();
+      if (text.trim() === "") return;
+      socket.emit("text", { msg: text });
+      $("#text").val("");
+    }
+
+    function addMessage(msg) {
+      const time = new Date().toLocaleTimeString();
+      $("#chat-container").append(
+        `<div class="message">[${time}] ${msg}</div>`
+      );
+      $("#chat-container").scrollTop(
+        $("#chat-container")[0].scrollHeight
+      );
+    }
+
+    function leave_room() {
+      socket.emit("left", {}, function () {
+        socket.disconnect();
+        window.location.href = "{{ url_for('main.index') }}";
+      });
+    }
+  </script>
+</head>
+
+<body>
+  <header>
+    AnonChat — Room: {{ room }}
+    <button id="leave" onclick="leave_room()">Leave</button>
+  </header>
+
+  <div id="chat-container"></div>
+
+  <footer>
+    <input id="text" placeholder="Type a message..." autocomplete="off" />
+    <button id="send">Send</button>
+  </footer>
+</body>
+</html>
