@@ -1,7 +1,8 @@
 from flask import Flask
 from flask_socketio import SocketIO
 
-socketio = SocketIO()
+# Use threading backend to avoid eventlet incompatibility on Python 3.12
+socketio = SocketIO(async_mode="threading")
 
 
 def create_app(debug=False):
